@@ -1,18 +1,15 @@
 import { memo } from 'react';
 import { Handle, Position, NodeResizer } from '@xyflow/react';
+import { CustomNodeProps } from './ReactFlow';
 
-interface ResizableNodeProps {
-  data: { label: string };
-  selected: boolean;
-}
-
-const ResizableNode = ({ data, selected }: ResizableNodeProps) => {
+const ResizableNode = ({ data, selected }: CustomNodeProps) => {
   return (
     <>
       <NodeResizer color="#ff0071" isVisible={selected} minWidth={100} minHeight={30} />
-      <Handle type="target" position={Position.Left} />
+      <Handle type="target" position={Position.Top} />
       <div style={{ padding: 10 }}>{data.label}</div>
-      <Handle type="source" position={Position.Right} />
+      <div style={{ padding: 10 }}>{data.content}</div>
+      <Handle type="source" position={Position.Bottom} />
     </>
   );
 };
