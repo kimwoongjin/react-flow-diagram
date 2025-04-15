@@ -17,6 +17,8 @@ import '@xyflow/react/dist/style.css';
 import ResizableNode from './ResizableNode';
 import UpdateForm from './UpdateForm';
 import InitialNode from './InitialNode';
+import SelectNodeArea from './SelectNodeArea';
+import ProcessNode from './ProcessNode';
 
 export interface CustomNodeProps {
   data: { label: string; content?: string; isFirst?: boolean };
@@ -119,6 +121,22 @@ const ReactFlowComponent = () => {
     [isVisible, updateLabel, updateContent, setNodes, setUpdateLabel, setUpdateContent, setIsVisible]
   );
 
+  const addNode = useCallback((type: string) => {
+    const id = getId();
+    const newNode = {
+      id,
+      type: type === 'default' ? 'InitialNode' : 'ProcessNode',
+      position: screenToFlowPosition({
+        x: 500,
+        y: 500,
+      }),
+      data: { label: `Node ${id}` },
+      origin: [0.5, 0.0],
+    } as Node;
+
+    setNodes((nds) => nds.concat(newNode));
+  }, []);
+
   return (
     <div className="wrapper" ref={reactFlowWrapper} style={{ height: '100vh', width: '100vw' }}>
       <ReactFlow
@@ -133,7 +151,8 @@ const ReactFlowComponent = () => {
         fitView
         fitViewOptions={{ padding: 2 }}
         nodeOrigin={nodeOrigin}
-        nodeTypes={{ InitialNode, ResizableNode }}
+        nodeTypes={{ InitialNode, ResizableNode, ProcessNode }}
+        colorMode="light"
       >
         <UpdateForm
           label={updateLabel}
@@ -142,6 +161,8 @@ const ReactFlowComponent = () => {
           setContent={setUpdateContent}
           isVisible={isVisible}
         />
+
+        <SelectNodeArea addNode={addNode} />
         <Background />
         <MiniMap />
         <Controls />

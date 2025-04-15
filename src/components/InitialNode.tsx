@@ -11,10 +11,10 @@ const InitialNode = ({ data, selected }: CustomNodeProps) => {
         <button value={'update'}>update</button>
         <button value={'resize'}>resize</button>
       </NodeToolbar>
-      {!data.isFirst && <Handle type="target" position={Position.Top} />}
+      {!data.isFirst && <Handle type="target" position={Position.Left} />}
       <div style={{ padding: 10 }}>{data.label}</div>
       <div style={{ padding: 10 }}>{data.content}</div>
-      <Handle type="source" position={Position.Bottom} />
+      <Handle type="source" position={Position.Right} />
     </>
   );
 };
