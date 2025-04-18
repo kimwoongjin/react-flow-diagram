@@ -10,10 +10,10 @@ const SelectNodeArea = ({ addNode }: { addNode: (type: string) => void }) => {
   return (
     <div
       style={{
-        position: 'absolute',
-        top: 20,
-        left: 20,
-        zIndex: 10,
+        // position: 'absolute',
+        // top: 20,
+        // left: 20,
+        // zIndex: 10,
         background: 'white',
         padding: '10px',
         borderRadius: '8px',
