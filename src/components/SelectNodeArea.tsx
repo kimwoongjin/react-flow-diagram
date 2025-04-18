@@ -1,12 +1,9 @@
-import { ReactElement } from 'react';
-import InitialNode from './InitialNode';
-import ProcessNode from './ProcessNode';
+type CustomNodeType = 'start' | 'process' | 'end';
 
-type CustomNodeType = 'default' | 'process';
-
-const nodeTypes: { type: CustomNodeType; label: string; node: ReactElement }[] = [
-  { type: 'default', label: '기본 노드', node: <InitialNode data={{ label: 'default' }} /> },
-  { type: 'process', label: '중간 노드', node: <ProcessNode data={{ label: 'Process' }} /> },
+const nodeTypes: { type: CustomNodeType; label: string }[] = [
+  { type: 'start', label: 'Start Node' },
+  { type: 'process', label: 'Process Node' },
+  { type: 'end', label: 'End Node' },
 ];
 
 const SelectNodeArea = ({ addNode }: { addNode: (type: string) => void }) => {
@@ -22,17 +19,19 @@ const SelectNodeArea = ({ addNode }: { addNode: (type: string) => void }) => {
         borderRadius: '8px',
         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
         width: '200px',
+        height: 'auto',
       }}
     >
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
+          display: 'flex',
+          flexDirection: 'column',
           gap: '10px',
         }}
       >
         {nodeTypes.map((node) => (
           <div
+            key={node.type}
             onClick={() => addNode(node.type)}
             style={{
               padding: '10px',
@@ -41,9 +40,10 @@ const SelectNodeArea = ({ addNode }: { addNode: (type: string) => void }) => {
               cursor: 'pointer',
               background: '#f8f8f8',
               transition: 'all 0.2s',
+              textAlign: 'center',
             }}
           >
-            {node.node}
+            <strong>{node.label}</strong>
           </div>
         ))}
       </div>

@@ -1,4 +1,5 @@
-import React, { useCallback, useRef, useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useCallback, useRef } from 'react';
 import {
   Background,
   ReactFlow,
@@ -6,19 +7,22 @@ import {
   useEdgesState,
   addEdge,
   useReactFlow,
-  type OnConnectEnd as OnConnectEndType,
+  // type OnConnectEnd as OnConnectEndType,
   type OnConnect,
   type Node,
   Controls,
   MiniMap,
+  MarkerType,
 } from '@xyflow/react';
 
 import '@xyflow/react/dist/style.css';
 import ResizableNode from './ResizableNode';
-import UpdateForm from './UpdateForm';
-import InitialNode from './InitialNode';
+// import UpdateForm from './UpdateForm';
+// import InitialNode from './InitialNode';
 import SelectNodeArea from './SelectNodeArea';
 import ProcessNode from './ProcessNode';
+import StartNode from './StartNode';
+import EndNode from './EndNode';
 
 export interface CustomNodeProps {
   data: { label: string; content?: string; isFirst?: boolean };
@@ -28,107 +32,78 @@ export interface CustomNodeProps {
 const initialNodes: Node[] = [
   {
     id: '0',
-    type: 'InitialNode',
-    data: { label: 'Start', content: 'input Content', isFirst: true },
+    type: 'StartNode',
+    data: { label: 'Start', content: '', isFirst: true },
     position: { x: 0, y: 100 },
   },
 ];
 
-let id = 1;
-const getId = () => `${id++}`;
+const getId = () => `${Math.random().toString(36).substring(2, 9)}`;
 const nodeOrigin: [number, number] = [0.5, 0];
 
 const ReactFlowComponent = () => {
   const reactFlowWrapper = useRef(null);
-
-  const [updateLabel, setUpdateLabel] = useState<string>('');
-  const [updateContent, setUpdateContent] = useState<string>('');
-  const [isVisible, setIsVisible] = useState<boolean>(false);
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const { screenToFlowPosition } = useReactFlow();
-  const onConnect: OnConnect = useCallback((params) => setEdges((eds) => addEdge(params, eds)), []);
-
-  const onConnectEnd: OnConnectEndType = useCallback(
-    (event, connectionState) => {
-      // when a connection is dropped on the pane it's not valid
-      if (!connectionState.isValid) {
-        // we need to remove the wrapper bounds, in order to get the correct position
-        const id = getId();
-        const { clientX, clientY } = 'changedTouches' in event ? event.changedTouches[0] : event;
-        const newNode = {
-          id,
-          type: 'InitialNode',
-          position: screenToFlowPosition({
-            x: clientX,
-            y: clientY,
-          }),
-          data: { label: `Node ${id}` },
-          origin: [0.5, 0.0],
-        } as Node;
-
-        setNodes((nds) => nds.concat(newNode));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setEdges((eds: any) =>
-          eds.concat({ type: 'smoothstep', id, source: connectionState.fromNode?.id, target: id })
-        );
-      }
+  const onConnect: OnConnect = useCallback(
+    (connection) => {
+      setEdges((oldEdges) => addEdge(connection, oldEdges));
     },
-    [screenToFlowPosition]
+    [setEdges]
   );
 
   const handleNodeClick = useCallback(
     (event: React.MouseEvent, node: Node) => {
-      const curMode = (event.target as HTMLInputElement).value;
+      const target = (event.target as HTMLInputElement).value;
 
-      if (curMode === 'update') {
-        if (isVisible) {
-          console.log('update : update');
-          setNodes((nds) =>
-            nds.map((n) => {
-              if (node.id === n.id) {
-                return {
-                  ...n,
-                  data: { label: updateLabel, content: updateContent },
-                };
-              }
-              return n;
-            })
-          );
+      if (!target) return;
 
-          setUpdateLabel('');
-          setUpdateContent('');
-          setIsVisible(false);
-        } else {
-          setUpdateLabel(node.data.label as string);
-          setUpdateContent(node.data.content as string);
-          setIsVisible(true);
-        }
-      } else {
+      if (target === 'start') {
+        const connectedEdge: any = edges.find((e: any) => e.source === node.id);
+        const nextNodeId = connectedEdge?.target;
+
+        setEdges((eds: any) => eds.map((e: any) => (e.source === node.id ? { ...e, animated: true } : { ...e })));
+
         setNodes((nds) =>
-          nds.map((n) => {
-            if (node.id === n.id) {
-              return {
-                ...n,
-                type: curMode === 'resize' ? 'ResizableNode' : 'InitialNode',
-              };
-            }
-            return n;
-          })
+          nds.map((n) => (n.id === nextNodeId ? { ...n, className: 'animated-border' } : { ...n, className: '' }))
         );
       }
+
+      if (target === 'stop') {
+        const connectedEdge: any = edges.find((e: any) => e.target === node.id);
+        const prevNodeId = connectedEdge?.source;
+
+        setEdges((eds: any) => eds.map((e: any) => (e.target === node.id ? { ...e, animated: false } : { ...e })));
+
+        setNodes((nds) =>
+          nds.map((n) => (n.id === prevNodeId ? { ...n, className: 'animated-border' } : { ...n, className: '' }))
+        );
+      }
+
+      if (target === 'finish') {
+        setNodes((nds) => nds.map((n) => ({ ...n, className: '' })));
+
+        setEdges((eds: any) => eds.map((e: any) => ({ ...e, animated: false })));
+      }
     },
-    [isVisible, updateLabel, updateContent, setNodes, setUpdateLabel, setUpdateContent, setIsVisible]
+    [edges, setEdges, setNodes]
   );
+
+  const selectNode: { [key: string]: string } = {
+    start: 'StartNode',
+    process: 'ProcessNode',
+    end: 'EndNode',
+  };
 
   const addNode = useCallback((type: string) => {
     const id = getId();
     const newNode = {
       id,
-      type: type === 'default' ? 'InitialNode' : 'ProcessNode',
+      type: selectNode[type],
       position: screenToFlowPosition({
-        x: 500,
-        y: 500,
+        x: 600,
+        y: 400,
       }),
       data: { label: `Node ${id}` },
       origin: [0.5, 0.0],
@@ -136,6 +111,18 @@ const ReactFlowComponent = () => {
 
     setNodes((nds) => nds.concat(newNode));
   }, []);
+
+  const connectionLineStyle = { stroke: '#fcfc' };
+  const snapGrid: [number, number] = [20, 20];
+
+  const defaultEdgeOptions = {
+    // animated: true,
+    type: 'smoothstep',
+    style: { stroke: '#fcfc', strokeWidth: 1 },
+    markerEnd: {
+      type: MarkerType.Arrow,
+    },
+  };
 
   return (
     <div className="wrapper" ref={reactFlowWrapper} style={{ height: '100vh', width: '100vw' }}>
@@ -146,22 +133,19 @@ const ReactFlowComponent = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
-        onConnectEnd={onConnectEnd}
+        // onConnectEnd={onConnectEnd}
         onNodeClick={handleNodeClick}
         fitView
         fitViewOptions={{ padding: 2 }}
         nodeOrigin={nodeOrigin}
-        nodeTypes={{ InitialNode, ResizableNode, ProcessNode }}
+        nodeTypes={{ StartNode, ResizableNode, ProcessNode, EndNode }}
         colorMode="light"
+        connectionLineStyle={connectionLineStyle}
+        snapToGrid={true}
+        snapGrid={snapGrid}
+        attributionPosition="bottom-left"
+        defaultEdgeOptions={defaultEdgeOptions}
       >
-        <UpdateForm
-          label={updateLabel}
-          content={updateContent}
-          setLabel={setUpdateLabel}
-          setContent={setUpdateContent}
-          isVisible={isVisible}
-        />
-
         <SelectNodeArea addNode={addNode} />
         <Background />
         <MiniMap />
